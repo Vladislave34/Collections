@@ -1,6 +1,6 @@
 package example.org;
 
-import java.sql.SQLOutput;
+
 import java.util.*;
 import java.time.LocalTime;
 public class Main {
@@ -225,12 +225,196 @@ public class Main {
 
     }
 
-    public static void main(String [] args){
 
-        Task1();
-        Task2();
-        Task3();
-    }
+        static double SIMULATION_TIME = 24 * 60; // 24 години (в хвилинах)
+
+        static int MAX_QUEUE_LIMIT = 50;
+
+        static Random random = new Random();
+
+        public static void main(String[] args) {
+
+            Scanner scanner = new Scanner(System.in);
+
+            System.out.println("Введіть середній час між пасажирами (хв): ");
+
+            double passengerMean = scanner.nextDouble();
+
+            System.out.println("Введіть середній час між катерами (хв): ");
+
+            double boatMean = scanner.nextDouble();
+
+            System.out.println("Тип зупинки (1 - кінцева, 0 - проміжна): ");
+
+            int stopType = scanner.nextInt();
+
+            runSimulation(passengerMean, boatMean, stopType);
+
+        }
+
+        static void runSimulation(double passengerMean, double boatMean, int stopType) {
+
+            Queue<Passenger> queue = new LinkedList<>();
+
+            double currentTime = 0;
+
+            double nextPassenger = getNextTime(passengerMean);
+
+            double nextBoat = getNextTime(boatMean);
+
+            double totalWaitTime = 0;
+
+            int served = 0;
+
+            int maxQueue = 0;
+
+            while (currentTime < SIMULATION_TIME) {
+
+                if (nextPassenger < nextBoat) {
+
+                    currentTime = nextPassenger;
+
+                    queue.add(new Passenger(currentTime));
+
+                    maxQueue = Math.max(maxQueue, queue.size());
+
+                    nextPassenger += getNextTime(passengerMean);
+
+                } else {
+
+                    currentTime = nextBoat;
+
+                    int seats = getRandomSeats(stopType);
+
+                    while (seats > 0 && !queue.isEmpty()) {
+
+                        Passenger p = queue.poll();
+
+                        totalWaitTime += (currentTime - p.arrivalTime);
+
+                        served++;
+
+                        seats--;
+
+                    }
+
+                    nextBoat += getNextTime(boatMean);
+
+                }
+
+            }
+
+            // Результати
+
+            System.out.println("\n===== РЕЗУЛЬТАТИ =====");
+
+            if (served > 0) {
+
+                System.out.println("Середній час очікування: " + (totalWaitTime / served) + " хв");
+
+            } else {
+
+                System.out.println("Немає обслужених пасажирів");
+
+            }
+
+            System.out.println("Максимальна черга: " + maxQueue);
+
+
+
+            findOptimalBoatInterval(passengerMean);
+
+        }
+
+        // Експоненційний розподіл
+
+        static double getNextTime(double mean) {
+
+            return -mean * Math.log(1 - random.nextDouble());
+
+        }
+
+        // Випадкова кількість місць
+
+        static int getRandomSeats(int stopType) {
+
+            if (stopType == 1) {
+
+                return 20 + random.nextInt(30); // 20–50 (кінцева)
+
+            } else {
+
+                return 5 + random.nextInt(20);  // 5–25 (проміжна)
+
+            }
+
+        }
+
+        // Пошук інтервалу катерів
+
+        static void findOptimalBoatInterval(double passengerMean) {
+
+            System.out.println("\n===== ПІДБІР ІНТЕРВАЛУ =====");
+
+            for (double boatMean = 1; boatMean <= 60; boatMean += 1) {
+
+                Queue<Passenger> queue = new LinkedList<>();
+
+                double currentTime = 0;
+
+                double nextPassenger = getNextTime(passengerMean);
+
+                double nextBoat = getNextTime(boatMean);
+
+                int maxQueue = 0;
+
+                while (currentTime < SIMULATION_TIME) {
+
+                    if (nextPassenger < nextBoat) {
+
+                        currentTime = nextPassenger;
+
+                        queue.add(new Passenger(currentTime));
+
+                        maxQueue = Math.max(maxQueue, queue.size());
+
+                        nextPassenger += getNextTime(passengerMean);
+
+                    } else {
+
+                        currentTime = nextBoat;
+
+                        int seats = 20 + random.nextInt(30);
+
+                        while (seats > 0 && !queue.isEmpty()) {
+
+                            queue.poll();
+
+                            seats--;
+
+                        }
+
+                        nextBoat += getNextTime(boatMean);
+
+                    }
+
+                }
+
+                if (maxQueue <= MAX_QUEUE_LIMIT) {
+
+                    System.out.println("Оптимальний інтервал: " + boatMean + " хв (макс черга = " + maxQueue + ")");
+
+                    return;
+
+                }
+
+            }
+
+            System.out.println("Не знайдено інтервалу для обмеження черги");
+
+        }
+
+
 
 
 
